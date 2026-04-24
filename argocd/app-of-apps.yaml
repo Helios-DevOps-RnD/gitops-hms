@@ -23,11 +23,11 @@ spec:
     targetRevision: main
     path: argocd
     directory:
+      # recurse=true walks every subdirectory under argocd/. No include glob —
+      # ArgoCD's doublestar handling of `**/*.yaml` is quirky (some versions
+      # fail to match files at depth=1). Letting recurse do the discovery and
+      # only excluding app-of-apps.yaml avoids all the glob edge cases.
       recurse: true
-      # Match every .yaml under argocd/ (both files directly in infrastructure/
-      # and nested files like apps/staging/xxx.yaml). Exclude app-of-apps.yaml
-      # itself to avoid a self-referential Application.
-      include: '**/*.yaml'
       exclude: 'app-of-apps.yaml'
 
   destination:
