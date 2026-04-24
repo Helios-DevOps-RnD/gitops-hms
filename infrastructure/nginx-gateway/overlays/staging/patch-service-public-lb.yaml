@@ -1,0 +1,23 @@
+# ============================================================================
+# Staging nginx-gateway Service — public Azure LoadBalancer.
+# ----------------------------------------------------------------------------
+# Same pattern as production: origin is a public Azure LB on :80, with
+# Cloudflare proxying in front. Cloudflare terminates TLS at the edge and
+# we restrict access via Cloudflare IP Access Rules so only clients on the
+# Azure P2S VPN range (172.20.20.0/24) can reach the staging hostnames:
+#   hms-staging.evanlwp.my.id
+#   api.hms-staging.evanlwp.my.id
+#   pubsub.hms-staging.evanlwp.my.id
+#
+# Why not an internal Azure LB?
+#   Cloudflare's edge can't reach a private VNet IP. If we ever want ingress
+#   to go through Cloudflare for TLS + WAF, the origin must be a public LB.
+#   The IP Access Rule at Cloudflare is what makes it VPN-only in practice.
+#
+# After first sync: `kubectl -n nginx-gateway get svc nginx-gateway` to read
+# the assigned EXTERNAL-IP, then create the three Cloudflare A records
+# (proxied) + matching IP Access Rule.
+# ============================================================================
+- op: replace
+  path: /spec/type
+  value: LoadBalancer

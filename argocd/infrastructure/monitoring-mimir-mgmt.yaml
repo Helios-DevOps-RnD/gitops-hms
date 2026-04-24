@@ -1,0 +1,39 @@
+# ============================================================================
+# ArgoCD Application — Mimir (metrics store) on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# Receives Prometheus remote_write from every cluster's Alloy.
+# Optional in MVP — if you only want logs initially, delete this file and the
+# Mimir push lines in the alloy values files.
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-mimir-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: mimir-distributed
+      targetRevision: 5.5.1
+      helm:
+        releaseName: mimir
+        valueFiles:
+          - $values/infrastructure/monitoring/mimir/values-mgmt.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

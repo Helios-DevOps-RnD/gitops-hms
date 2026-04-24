@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hms
+
+resources:
+  - ../../base
+  - httproute.yaml
+  # SealedSecret for PGPASSWORD + firebase-key.json. File is a placeholder
+  # on first commit; Jenkins overwrites it (kubeseal against staging-pub.pem)
+  # on every staging build and commits the real encrypted data.
+  - sealed-secret.yaml
+
+patches:
+  - path: patch-image.yaml
+    target:
+      kind: Deployment
+      name: hms-be
+  - path: patch-resources.yaml
+    target:
+      kind: Deployment
+      name: hms-be
+
+commonLabels:
+  env: staging

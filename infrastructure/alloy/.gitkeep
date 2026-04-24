@@ -1,0 +1,2 @@
+# Phase 3 scaffolding now populates this dir with values-{mgmt,staging,production}.yaml.
+# This .gitkeep is no longer needed — safe to `git rm` it.

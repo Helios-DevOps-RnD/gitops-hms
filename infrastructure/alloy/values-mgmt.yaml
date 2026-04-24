@@ -1,0 +1,77 @@
+# ============================================================================
+# Grafana Alloy — values for the MGMT cluster
+# ----------------------------------------------------------------------------
+# Alloy is the agent that scrapes logs/metrics on every cluster and ships
+# them to a central Loki + Mimir on the mgmt cluster.
+#
+# This file is values for the official Helm chart `grafana/alloy`.
+# It is consumed by the ArgoCD Application argocd/infrastructure/alloy-mgmt.yaml.
+#
+# Mgmt-specific behaviour:
+#   - Ships to Loki/Mimir IN-CLUSTER (no LB hop): cheaper + lower latency.
+#   - external_labels.cluster=mgmt so Grafana can filter by source cluster.
+# ============================================================================
+
+controller:
+  type: daemonset                # one Alloy pod per node, scrapes node-local data
+  replicas: 1                    # ignored for daemonset; explicit for clarity
+
+# Run as root for /var/log access. Locked down further in Phase 3.5 with
+# pod security profiles + a non-root config dir.
+alloy:
+  uiPathPrefix: /
+  resources:
+    requests: { cpu: 50m,  memory: 128Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+  # ----- Alloy River config (the brain of the agent) -----
+  # This is intentionally small. Three pipelines:
+  #   1) Scrape pod logs from /var/log/pods → push to Loki
+  #   2) Scrape pod metrics from annotated pods → remote_write to Mimir
+  #   3) Scrape kubelet/cadvisor metrics → remote_write to Mimir
+  configMap:
+    create: true
+    content: |
+      // ---------- LOGS ----------
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods.targets
+        forward_to = [loki.write.default.receiver]
+      }
+
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      loki.write "default" {
+        endpoint {
+          // In-cluster — Loki Service in the `monitoring` namespace.
+          url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+        }
+        external_labels = {
+          cluster = "mgmt",
+        }
+      }
+
+      // ---------- METRICS ----------
+      prometheus.scrape "kubelet" {
+        targets    = discovery.kubernetes.nodes.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      prometheus.remote_write "default" {
+        endpoint {
+          // In-cluster — Mimir Service in the `monitoring` namespace.
+          url = "http://mimir-nginx.monitoring.svc.cluster.local/api/v1/push"
+        }
+        external_labels = {
+          cluster = "mgmt",
+        }
+      }
+
+# Service account needs RBAC to list pods/nodes — chart provides it by default.
+serviceAccount:
+  create: true

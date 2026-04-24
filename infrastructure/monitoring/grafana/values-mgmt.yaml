@@ -1,0 +1,58 @@
+# ============================================================================
+# Grafana — values for the MGMT cluster (chart: grafana/grafana)
+# ----------------------------------------------------------------------------
+# Single Grafana instance on mgmt with Loki + Mimir pre-wired as datasources.
+# Phase 3 access: kubectl port-forward 3000:80 (mgmt API server is private —
+# you're on the P2S VPN anyway).
+# Phase 3.5: add an nginx-gateway Application for mgmt + an HTTPRoute here,
+# expose via internal LB, hit at http://grafana.hms.internal over the VPN.
+# ============================================================================
+
+# Admin password — INITIAL VALUE, ROTATE BEFORE PROD USE.
+# Real fix: Jenkins creates a Secret `grafana-admin` with key `admin-password`,
+# then set:  admin: { existingSecret: grafana-admin, passwordKey: admin-password }
+adminPassword: "changeme-rotate-via-jenkins-secret"
+
+replicas: 1
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits:   { cpu: 500m, memory: 512Mi }
+
+persistence:
+  enabled: true
+  size: 5Gi                        # dashboards + plugins state
+  storageClassName: managed-csi
+
+service:
+  type: ClusterIP                  # access via port-forward initially
+
+# ----- Datasources auto-provisioned on startup -----
+# These point at the in-cluster Loki/Mimir Services. Grafana is on the SAME
+# cluster as Loki/Mimir, so no LB hop needed.
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki-gateway.monitoring.svc.cluster.local
+        isDefault: false
+      - name: Mimir
+        type: prometheus
+        access: proxy
+        url: http://mimir-nginx.monitoring.svc.cluster.local/prometheus
+        isDefault: true
+        jsonData:
+          prometheusType: Mimir
+
+# Default dashboard placeholders — drop JSON dashboards in
+# infrastructure/monitoring/grafana/dashboards/ later and reference them via a
+# sidecar configmap (set sidecar.dashboards.enabled: true).
+sidecar:
+  dashboards:
+    enabled: false                 # TODO: enable + ship K8s + app dashboards
+    label: grafana_dashboard
+  datasources:
+    enabled: false                 # we provision via the values block above

@@ -1,0 +1,80 @@
+# ============================================================================
+# Loki — values for the MGMT cluster (chart: grafana/loki)
+# ----------------------------------------------------------------------------
+# Single-binary mode = simplest topology that works:
+#   - 1 pod with all components (ingester, querier, distributor, etc.)
+#   - filesystem storage on a small PVC
+# Trade-off: not HA, ~5 GB/day max comfortably. Good enough for staging+prod
+# of a 3-app deployment. Migrate to "scalable" mode + Azure Blob when traffic
+# justifies it (see TODO at bottom).
+#
+# Cross-cluster receivers reach Loki via an INTERNAL Azure LB on the
+# `loki-gateway` Service — that's how alloy-staging and alloy-production push.
+# ============================================================================
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false              # TODO: enable + multitenant tokens once Grafana datasource handles it
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem               # TODO: switch to type: azure with a Storage Account for durability
+  schemaConfig:
+    configs:
+      - from: 2024-01-01
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  limits_config:
+    retention_period: 168h         # 7 days. Bump once Azure Blob backs storage.
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+
+# Single-binary deployment: 1 replica, modest PVC.
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: managed-csi      # default Azure managed disk on AKS
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1,    memory: 1Gi }
+
+# Disable the components SingleBinary mode doesn't use — keeps the install small.
+backend:    { replicas: 0 }
+read:       { replicas: 0 }
+write:      { replicas: 0 }
+ingester:   { replicas: 0 }
+querier:    { replicas: 0 }
+queryFrontend: { replicas: 0 }
+queryScheduler: { replicas: 0 }
+distributor: { replicas: 0 }
+compactor:  { replicas: 0 }
+indexGateway: { replicas: 0 }
+bloomCompactor: { replicas: 0 }
+bloomGateway:   { replicas: 0 }
+
+# The "gateway" Service is the single push/query endpoint Alloy + Grafana hit.
+# Annotate it as an INTERNAL Azure LB so cross-cluster Alloy can reach it via
+# VNet peering without exposing Loki to the internet.
+gateway:
+  enabled: true
+  replicas: 1
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+
+# Disable bundled monitoring sub-charts — we have our own Alloy + Grafana.
+monitoring:
+  selfMonitoring:    { enabled: false }
+  serviceMonitor:    { enabled: false }
+  lokiCanary:        { enabled: false }
+test:                { enabled: false }
+chunksCache:         { enabled: false }   # TODO: re-enable + memcached when query latency matters
+resultsCache:        { enabled: false }

@@ -1,0 +1,62 @@
+# ============================================================================
+# Grafana Alloy — values for the STAGING cluster
+# ----------------------------------------------------------------------------
+# Same agent as mgmt, but ships ACROSS the VNet peering to the mgmt cluster's
+# Loki/Mimir. The endpoint URLs point at internal Azure LB IPs that the
+# Loki/Mimir Services on mgmt will be assigned (see
+# infrastructure/monitoring/{loki,mimir}/values-mgmt.yaml — Service is annotated
+# with `azure-load-balancer-internal: true` and lives in mgmt VNet 10.0.0.0/16).
+#
+# After mgmt sync: get the IPs with
+#   kubectl --context mgmt -n monitoring get svc loki-gateway mimir-nginx
+# Then update LOKI_PUSH_URL / MIMIR_PUSH_URL below.
+# ============================================================================
+
+controller:
+  type: daemonset
+
+alloy:
+  resources:
+    requests: { cpu: 50m,  memory: 128Mi }
+    limits:   { cpu: 300m, memory: 384Mi }
+
+  configMap:
+    create: true
+    content: |
+      // ---------- LOGS ----------
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods.targets
+        forward_to = [loki.write.default.receiver]
+      }
+      discovery.kubernetes "pods" { role = "pod" }
+
+      loki.write "default" {
+        endpoint {
+          // TODO: replace with the internal LB IP of `loki-gateway` on mgmt
+          //   (look it up after the loki Application syncs on mgmt)
+          url = "http://10.0.X.X/loki/api/v1/push"
+        }
+        external_labels = {
+          cluster = "staging",
+        }
+      }
+
+      // ---------- METRICS ----------
+      prometheus.scrape "kubelet" {
+        targets    = discovery.kubernetes.nodes.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+      discovery.kubernetes "nodes" { role = "node" }
+
+      prometheus.remote_write "default" {
+        endpoint {
+          // TODO: replace with the internal LB IP of `mimir-nginx` on mgmt
+          url = "http://10.0.X.X/api/v1/push"
+        }
+        external_labels = {
+          cluster = "staging",
+        }
+      }
+
+serviceAccount:
+  create: true

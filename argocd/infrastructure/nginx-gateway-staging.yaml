@@ -1,0 +1,29 @@
+# ArgoCD Application — NGINX Gateway Fabric on the STAGING cluster.
+# Sync wave -10: after namespaces, before workloads (which create HTTPRoutes).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nginx-gateway-staging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: infrastructure/nginx-gateway/overlays/staging
+  destination:
+    name: hms-staging
+    namespace: nginx-gateway
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      # CRDs in install.yaml are large — let server-side apply own them
+      - Replace=true

@@ -1,0 +1,43 @@
+# ============================================================================
+# ArgoCD Application — Grafana Alloy on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# Multi-source layout:
+#   sources[0]  Helm chart `alloy` from grafana.github.io/helm-charts
+#   sources[1]  this repo, ref'd as $values, supplies the values file
+# ArgoCD pulls the chart, renders it with the values file pulled from git,
+# applies the result.
+#
+# Sync wave -5: after gateway (-10), before workloads (0).
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 0.10.1            # pin chart version — bump deliberately
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/infrastructure/alloy/values-mgmt.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc   # mgmt (in-cluster)
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NGINX Gateway Fabric v2.5.1 — same version as staging.
+resources:
+  - https://github.com/nginx/nginx-gateway-fabric.git//config/crd/gateway-api/standard?ref=v2.5.1
+  - https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/crds.yaml
+  - https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/default/deploy.yaml
+  - ../../base
+
+# Public LoadBalancer for the controller Service. Cloudflare proxies in front
+# of this IP and terminates TLS — so we expose HTTP on :80 to Cloudflare's
+# edge over the public internet (Cloudflare → origin is HTTP/Flexible OR
+# strict if you put a self-signed cert here later).
+patches:
+  - path: patch-service-public-lb.yaml
+    target:
+      kind: Service
+      name: nginx-gateway
+      namespace: nginx-gateway
+  - path: patch-gateway.yaml
+    target:
+      kind: Gateway
+      name: hms-gateway
+      namespace: hms
+
+commonLabels:
+  env: production

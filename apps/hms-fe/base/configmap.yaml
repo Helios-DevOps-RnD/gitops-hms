@@ -1,0 +1,13 @@
+# Public env for the Next.js client bundle. Overlays patch the URLs per env.
+# Key names match what entrypoint.sh reads (and writes into
+# /public/env-config.js as window.__ENV__.API_URL / .CREATE_URL). Don't
+# prefix NEXT_PUBLIC_ — that convention bakes values at build time; here we
+# want runtime injection so one image works in staging and prod.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-fe-config
+  namespace: hms
+data:
+  API_URL: "http://api.placeholder"
+  CREATE_URL: "http://pubsub.placeholder"

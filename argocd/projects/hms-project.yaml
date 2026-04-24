@@ -1,0 +1,52 @@
+# ============================================================================
+# AppProject: hms
+# ----------------------------------------------------------------------------
+# Scopes what every Application in this project may do:
+#   - Source repos:  this gitops repo, NGF upstream, Grafana Helm charts
+#   - Destinations:  the mgmt cluster (in-cluster) + registered spoke clusters
+#   - Namespaces:    argocd, hms, nginx-gateway, monitoring
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: hms
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: HMS workloads + supporting infrastructure (staging, prod)
+
+  sourceRepos:
+    - https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    # Allow upstream NGINX Gateway Fabric install manifests if pulled directly
+    - https://github.com/nginx/nginx-gateway-fabric.git
+    # Phase 3 - Helm chart repo for Grafana Alloy, Loki, Mimir, Grafana
+    - https://grafana.github.io/helm-charts
+    # Sealed Secrets controller (one install per cluster, keypair lives in-cluster)
+    - https://bitnami-labs.github.io/sealed-secrets
+
+  destinations:
+    # mgmt cluster (where ArgoCD itself lives) - for ArgoCD self-management later
+    - name: in-cluster
+      namespace: '*'
+      server: https://kubernetes.default.svc
+    # staging spoke (added in 2-register-clusters.sh)
+    - name: hms-staging
+      namespace: '*'
+      server: '*'
+    # prod spoke (Phase 2)
+    - name: hms-prod
+      namespace: '*'
+      server: '*'
+
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+
+  # Warn (don't fail) if ArgoCD finds resources outside the namespaces it manages.
+  orphanedResources:
+    warn: true

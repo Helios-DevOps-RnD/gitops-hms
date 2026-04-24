@@ -1,0 +1,40 @@
+# ============================================================================
+# ArgoCD Application — Grafana UI on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# Sync wave -3: AFTER Loki and Mimir (-5) so datasource probes succeed.
+# Access Phase 3:   kubectl --context mgmt -n monitoring port-forward svc/grafana 3000:80
+#         then  http://localhost:3000  (admin / value of adminPassword)
+# Access Phase 3.5: HTTPRoute on a future mgmt nginx-gateway → grafana.hms.internal
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-grafana-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: grafana
+      targetRevision: 8.5.2
+      helm:
+        releaseName: grafana
+        valueFiles:
+          - $values/infrastructure/monitoring/grafana/values-mgmt.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

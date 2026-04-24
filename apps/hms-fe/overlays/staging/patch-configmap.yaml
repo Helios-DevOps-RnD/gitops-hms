@@ -1,0 +1,11 @@
+# Staging public URLs.
+# Cloudflare proxies hms-staging.evanlwp.my.id — TLS terminates at the edge,
+# origin is HTTP on the Azure public LB. Cloudflare IP Access Rules restrict
+# to the P2S VPN range (172.20.20.0/24), so only developers can reach it.
+# The browser always sees https:// because Cloudflare rewrites the scheme.
+- op: replace
+  path: /data/API_URL
+  value: "https://api.hms-staging.evanlwp.my.id"
+- op: replace
+  path: /data/CREATE_URL
+  value: "https://pubsub.hms-staging.evanlwp.my.id"

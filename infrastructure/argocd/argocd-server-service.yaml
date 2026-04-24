@@ -1,0 +1,46 @@
+# ============================================================================
+# argocd-server Service override — MGMT cluster internal LB
+# ----------------------------------------------------------------------------
+# Replaces the default ClusterIP Service with a LoadBalancer that Azure
+# provisions as an INTERNAL LB (annotation `azure-load-balancer-internal: true`),
+# so the ArgoCD UI + gRPC API is only reachable from:
+#   - the mgmt AKS VNet
+#   - peered spoke VNets (staging / prod)
+#   - clients on the Azure P2S VPN
+#
+# The upstream installer creates the Service with the same name, same selector,
+# and type=ClusterIP. Because we keep the name/selector identical and apply
+# with server-side apply (ServerSideApply=true in the Application), Kustomize
+# replaces the spec in place — no orphaned Service, no duplicate.
+#
+# Ports:
+#   80  -> argocd-server :8080 (HTTP, redirects to HTTPS)
+#   443 -> argocd-server :8080 (HTTPS — TLS terminates inside the pod)
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/component: server
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/part-of: argocd
+  annotations:
+    # Azure internal LoadBalancer - reachable from the mgmt VNet +
+    # peered spoke VNets + P2S VPN clients. NOT exposed to the public internet.
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+spec:
+  type: LoadBalancer
+  # Keep the default selector that the upstream install.yaml ships with.
+  selector:
+    app.kubernetes.io/name: argocd-server
+  ports:
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: 8080
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8080

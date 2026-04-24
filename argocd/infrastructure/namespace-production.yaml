@@ -1,0 +1,28 @@
+# ArgoCD Application — `hms` namespace on the PROD cluster.
+# Phase 2: enable when prod cluster is registered with ArgoCD.
+# Until then, ArgoCD will mark this Unknown/Missing Cluster — that's expected.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: namespace-production
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: infrastructure/namespaces/overlays/production
+  destination:
+    name: hms-prod
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

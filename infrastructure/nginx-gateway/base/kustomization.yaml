@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - gatewayclass.yaml
+  - gateway.yaml
+  # install.yaml is intentionally empty — the upstream CRDs + controller
+  # are referenced from each overlay's kustomization.yaml so we can pin
+  # different versions per env if needed.

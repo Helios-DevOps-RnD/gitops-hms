@@ -1,0 +1,38 @@
+# ============================================================================
+# ArgoCD Application — Loki on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# This is the central log store. All clusters' Alloys push here.
+# Lives in `monitoring` namespace alongside Mimir + Grafana.
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-loki-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: loki
+      targetRevision: 6.16.0            # pin chart version
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $values/infrastructure/monitoring/loki/values-mgmt.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

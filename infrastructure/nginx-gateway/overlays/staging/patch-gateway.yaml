@@ -1,0 +1,12 @@
+# Staging Gateway: HTTP only.
+# All three apps share the single :80 listener — the HTTPRoute hostnames
+# (hms.internal, api.hms.internal, pubsub.hms.internal) do the routing.
+- op: replace
+  path: /spec/listeners
+  value:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same

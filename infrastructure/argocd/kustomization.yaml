@@ -1,0 +1,26 @@
+# ============================================================================
+# ArgoCD self-management overlay (MGMT cluster only)
+# ----------------------------------------------------------------------------
+# The core ArgoCD install is done imperatively via bootstrap/1-install-argocd.sh
+# (it applies the upstream `install.yaml` with --server-side). That covers
+# creating the Deployments, CRDs, ServiceAccounts, RBAC, and default Services.
+#
+# This overlay layers a single change on top: it flips the `argocd-server`
+# Service from ClusterIP (default) to LoadBalancer with the Azure *internal*
+# LoadBalancer annotation, so the UI + gRPC API are reachable on the mgmt VNet
+# (and peered hub VNet) via the P2S VPN — no more kubectl port-forward.
+#
+# We deliberately keep this overlay minimal instead of vendoring the entire
+# upstream install.yaml. Any other ArgoCD-level config (RBAC, SSO, etc.) can be
+# added here later as additional patches or ConfigMaps.
+#
+# This is pulled into ArgoCD by `argocd/infrastructure/argocd-self.yaml` once
+# the app-of-apps is bootstrapped — ArgoCD then reconciles its own Service.
+# ============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - argocd-server-service.yaml

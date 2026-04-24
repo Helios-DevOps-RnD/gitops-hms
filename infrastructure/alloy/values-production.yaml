@@ -1,0 +1,51 @@
+# ============================================================================
+# Grafana Alloy — values for the PROD cluster
+# ----------------------------------------------------------------------------
+# Same as staging, just labelled `cluster=production` so Grafana queries can
+# segment. Ships to the same mgmt Loki/Mimir endpoints.
+# ============================================================================
+
+controller:
+  type: daemonset
+
+alloy:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 500m, memory: 512Mi }
+
+  configMap:
+    create: true
+    content: |
+      loki.source.kubernetes "pods" {
+        targets    = discovery.kubernetes.pods.targets
+        forward_to = [loki.write.default.receiver]
+      }
+      discovery.kubernetes "pods" { role = "pod" }
+
+      loki.write "default" {
+        endpoint {
+          // TODO: same internal LB IP as staging (Loki on mgmt is one place)
+          url = "http://10.0.X.X/loki/api/v1/push"
+        }
+        external_labels = {
+          cluster = "production",
+        }
+      }
+
+      prometheus.scrape "kubelet" {
+        targets    = discovery.kubernetes.nodes.targets
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+      discovery.kubernetes "nodes" { role = "node" }
+
+      prometheus.remote_write "default" {
+        endpoint {
+          url = "http://10.0.X.X/api/v1/push"
+        }
+        external_labels = {
+          cluster = "production",
+        }
+      }
+
+serviceAccount:
+  create: true

@@ -1,0 +1,20 @@
+# HTTPRoute — exposes hms-pubsub at https://pubsub.hms.evanlwp.my.id (Cloudflare proxied).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hms-pubsub
+  namespace: hms
+spec:
+  parentRefs:
+    - name: hms-gateway
+      sectionName: http
+  hostnames:
+    - pubsub.hms.evanlwp.my.id
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: hms-pubsub
+          port: 80

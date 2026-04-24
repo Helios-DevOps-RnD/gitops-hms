@@ -1,0 +1,33 @@
+# ArgoCD Application — hms-pubsub on STAGING cluster.
+# `hms-pubsub-secret` is a SealedSecret committed to
+# overlays/staging/sealed-secret.yaml (Jenkins seals it on each build).
+# The controller from `sealed-secrets-staging` Application decrypts it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hms-pubsub-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: apps/hms-pubsub/overlays/staging
+  destination:
+    name: hms-staging
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

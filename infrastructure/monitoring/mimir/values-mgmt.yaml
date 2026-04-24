@@ -1,0 +1,73 @@
+# ============================================================================
+# Mimir — values for the MGMT cluster (chart: grafana/mimir-distributed)
+# ----------------------------------------------------------------------------
+# Monolithic mode = single binary with all components.
+# Same trade-offs as Loki single-binary: simple, not HA, fine for low-volume
+# starter setup.
+#
+# Cross-cluster Alloys remote_write here via an internal Azure LB on the
+# `mimir-nginx` Service.
+# ============================================================================
+
+# Force monolithic deployment — every component runs in one pod.
+mimir:
+  structuredConfig:
+    common:
+      storage:
+        backend: filesystem        # TODO: backend: azure (Storage Account container)
+    blocks_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/tsdb
+    alertmanager_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/alertmanager
+    ruler_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/ruler
+    limits:
+      compactor_blocks_retention_period: 168h    # 7 days
+      ingestion_rate: 100000
+
+# Toggle the chart into monolithic — every "component" is replicas: 0,
+# the actual server lives under `mimir.replicas` below as a single statefulset.
+deploymentMode: monolithic
+metaMonitoring:
+  serviceMonitor: { enabled: false }
+  grafanaAgent:   { enabled: false }
+minio:           { enabled: false }   # we're not using S3-compatible storage in starter
+
+# Disable distributed components.
+alertmanager:    { replicas: 0 }
+compactor:       { replicas: 0 }
+distributor:     { replicas: 0 }
+ingester:        { replicas: 0 }
+overrides_exporter: { replicas: 0 }
+querier:         { replicas: 0 }
+query_frontend:  { replicas: 0 }
+query_scheduler: { replicas: 0 }
+ruler:           { replicas: 0 }
+store_gateway:   { replicas: 0 }
+
+# Single monolithic pod.
+mimir_monolith:
+  replicas: 1
+  persistentVolume:
+    enabled: true
+    size: 20Gi
+    storageClass: managed-csi
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits:   { cpu: 1,    memory: 1Gi }
+
+# nginx fronts the HTTP API — push from Alloy, queries from Grafana, all hit
+# this Service. Internal LB so cross-cluster traffic stays in the VNet.
+nginx:
+  enabled: true
+  replicas: 1
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-internal: "true"

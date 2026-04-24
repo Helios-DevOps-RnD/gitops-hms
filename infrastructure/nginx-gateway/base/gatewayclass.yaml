@@ -1,0 +1,8 @@
+# GatewayClass — declares the NGINX Gateway Fabric controller.
+# Same name on every cluster; Gateway resources reference it by name.
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: nginx
+spec:
+  controllerName: gateway.nginx.org/nginx-gateway-controller

@@ -1,0 +1,29 @@
+# ============================================================================
+# NGINX Gateway Fabric — install pointer.
+# ----------------------------------------------------------------------------
+# Don't paste 5000+ lines of CRDs/RBAC inline. Two clean options — pick one
+# and DELETE the other when you go live:
+#
+# OPTION A (recommended): pull straight from the upstream release in the
+# overlay's kustomization.yaml.  Leave this file empty (or just this comment).
+#
+#   # in overlays/<env>/kustomization.yaml
+#   resources:
+#     - https://github.com/nginx/nginx-gateway-fabric/releases/download/v1.6.0/crds.yaml
+#     - https://github.com/nginx/nginx-gateway-fabric/releases/download/v1.6.0/nginx-gateway.yaml
+#     - ../../base
+#
+# OPTION B (air-gapped): vendor the manifests into this file once with:
+#
+#   curl -sL https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/crds.yaml \
+#        > crds.yaml
+#   curl -sL https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/default/deploy.yaml \
+#        > install.yaml
+#   # Plus the upstream Gateway API CRDs vendored by NGF:
+#   kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric.git//config/crd/gateway-api/standard?ref=v2.5.1" \
+#        > gateway-api-crds.yaml
+#
+# This repo ships with OPTION A wired up in the overlays. To switch to B,
+# replace the upstream URLs in the overlay kustomization with `crds.yaml` and
+# `install.yaml` paths.
+# ============================================================================

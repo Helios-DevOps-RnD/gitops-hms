@@ -1,0 +1,8 @@
+# Prod public URLs (HTTPS terminated at Cloudflare edge, origin is the
+# NGINX Gateway Fabric public LB on the prod cluster).
+- op: replace
+  path: /data/API_URL
+  value: "https://api.hms.evanlwp.my.id"
+- op: replace
+  path: /data/CREATE_URL
+  value: "https://pubsub.hms.evanlwp.my.id"

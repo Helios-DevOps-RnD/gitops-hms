@@ -1,0 +1,24 @@
+# HTTPRoute — exposes hms-fe via the shared hms-gateway.
+# Cloudflare proxies https://hms-staging.evanlwp.my.id → origin HTTP on the
+# public Azure LB; Host header is preserved so NGF matches on the hostname
+# below. VPN-only access is enforced at Cloudflare (IP Access Rule on
+# 172.20.20.0/24).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: hms-fe
+  namespace: hms
+spec:
+  parentRefs:
+    - name: hms-gateway
+      sectionName: http
+  hostnames:
+    - hms-staging.evanlwp.my.id
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: hms-fe
+          port: 80

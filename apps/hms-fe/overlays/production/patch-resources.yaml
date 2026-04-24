@@ -1,0 +1,13 @@
+# Prod: 2 replicas for HA.
+- op: replace
+  path: /spec/replicas
+  value: 2
+- op: replace
+  path: /spec/template/spec/containers/0/resources
+  value:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

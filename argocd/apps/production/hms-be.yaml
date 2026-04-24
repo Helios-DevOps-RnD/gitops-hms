@@ -1,0 +1,25 @@
+# ArgoCD Application — hms-be on PROD cluster.
+# Phase 2: enable when prod cluster is registered with ArgoCD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hms-be-production
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: apps/hms-be/overlays/production
+  destination:
+    name: hms-prod
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

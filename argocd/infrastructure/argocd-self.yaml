@@ -1,0 +1,44 @@
+# ============================================================================
+# ArgoCD self-management Application (MGMT cluster)
+# ----------------------------------------------------------------------------
+# ArgoCD on mgmt manages itself. Points at `infrastructure/argocd/` which only
+# contains the Service override that flips `argocd-server` to an Azure internal
+# LoadBalancer — so after bootstrap we drop kubectl port-forward and reach the
+# UI/gRPC API directly over the P2S VPN.
+#
+# Why not a full Helm install?
+#   The imperative bootstrap step (bootstrap/1-install-argocd.sh) already ran
+#   `kubectl apply --server-side -f install.yaml` for the core components. This
+#   Application only layers on the LB service. Anything else that needs to be
+#   managed post-bootstrap (RBAC ConfigMap, SSO, notifications config) can be
+#   added to the same kustomize overlay later.
+#
+# sync-wave: -20 — runs before everything else (sealed-secrets is -10). Flips
+# the Service type in-place via server-side apply so the ArgoCD UI is reachable
+# before we expect operators to watch sync progress.
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-self
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: infrastructure/argocd
+  destination:
+    server: https://kubernetes.default.svc   # mgmt cluster (in-cluster)
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: false    # do NOT prune argocd core resources if this App is deleted
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true

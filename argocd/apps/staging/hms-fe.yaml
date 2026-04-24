@@ -1,0 +1,30 @@
+# ArgoCD Application — hms-fe on STAGING cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hms-fe-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: apps/hms-fe/overlays/staging
+  destination:
+    name: hms-staging
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

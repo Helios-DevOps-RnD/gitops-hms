@@ -1,0 +1,12 @@
+# Prod Gateway: HTTP listener exposed to Cloudflare proxy.
+# Cloudflare terminates TLS at the edge; origin can stay HTTP (Flexible) or
+# you can add an HTTPS listener with a self-signed cert later for Full/Strict.
+- op: replace
+  path: /spec/listeners
+  value:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same

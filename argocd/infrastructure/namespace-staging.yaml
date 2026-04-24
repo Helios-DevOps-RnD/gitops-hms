@@ -1,0 +1,27 @@
+# ArgoCD Application — `hms` namespace on the STAGING cluster.
+# Sync wave -20 ensures namespace exists before any workload that depends on it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: namespace-staging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: infrastructure/namespaces/overlays/staging
+  destination:
+    name: hms-staging
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

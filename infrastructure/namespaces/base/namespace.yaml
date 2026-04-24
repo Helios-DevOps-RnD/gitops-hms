@@ -1,0 +1,11 @@
+# The `hms` namespace — same name on every cluster.
+# Cluster, not namespace, separates staging from prod.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hms
+  labels:
+    app.kubernetes.io/name: hms
+    app.kubernetes.io/part-of: hms
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted

@@ -1,0 +1,36 @@
+# ArgoCD Application — hms-be on STAGING cluster.
+# Secrets (`hms-be-secret`, `hms-be-firebase`) are delivered via Sealed
+# Secrets: Jenkins seals raw values with `kubeseal --cert staging-pub.pem`
+# and commits the encrypted SealedSecret to overlays/staging/sealed-secret.yaml.
+# ArgoCD syncs the SealedSecret; the in-cluster controller decrypts it into
+# a regular Secret. See `argocd/infrastructure/sealed-secrets-staging.yaml`
+# for the controller install (sync-wave -10, runs first).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hms-be-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: apps/hms-be/overlays/staging
+  destination:
+    name: hms-staging
+    namespace: hms
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ServerSideApply=true
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 2m

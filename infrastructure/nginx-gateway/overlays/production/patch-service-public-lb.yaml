@@ -1,0 +1,8 @@
+# Public Azure LoadBalancer (no internal annotation).
+# Get the assigned public IP after sync and create 3 Cloudflare A records:
+#   hms.evanlwp.my.id        → <LB IP>   (Proxied)
+#   api.hms.evanlwp.my.id    → <LB IP>   (Proxied)
+#   pubsub.hms.evanlwp.my.id → <LB IP>   (Proxied)
+- op: replace
+  path: /spec/type
+  value: LoadBalancer

@@ -1,0 +1,35 @@
+# ArgoCD Application — Grafana Alloy on the PROD cluster.
+# Phase 2/3: enable when prod cluster is registered.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy-production
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 0.10.1
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/infrastructure/alloy/values-production.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    name: hms-prod
+    namespace: monitoring
+  syncPolicy:
+    # Manual sync on prod until staging proves out (consistent with hms-* prod apps).
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

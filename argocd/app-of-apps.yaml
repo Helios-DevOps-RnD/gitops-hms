@@ -1,0 +1,39 @@
+# ============================================================================
+# Root "app-of-apps" Application
+# ----------------------------------------------------------------------------
+# This single Application points ArgoCD at the `argocd/` directory of this
+# repo (excluding itself). ArgoCD will recursively discover every Application
+# manifest under argocd/apps/ and argocd/infrastructure/ and create them.
+#
+# After bootstrap, the only manual `kubectl apply` ever needed is THIS file.
+# Everything else (including changes to this file) flows through git.
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: hms-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+
+  source:
+    repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+    targetRevision: main
+    path: argocd
+    directory:
+      recurse: true
+      include: '{apps/**/*.yaml,infrastructure/**/*.yaml}'
+
+  destination:
+    server: https://kubernetes.default.svc   # mgmt cluster (where ArgoCD lives)
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true

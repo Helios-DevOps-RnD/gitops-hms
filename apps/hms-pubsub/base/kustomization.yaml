@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hms
+
+resources:
+  - hms-pubsub.yaml
+
+# `hms-pubsub-secret` lives as a SealedSecret per overlay so each env seals
+# against its own cluster key. See overlays/<env>/sealed-secret.yaml.

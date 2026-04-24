@@ -1,0 +1,35 @@
+# ArgoCD Application — Grafana Alloy on the STAGING cluster.
+# Same chart as mgmt, different values file (different `cluster` label +
+# cross-cluster push URLs).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alloy-staging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      targetRevision: 0.10.1
+      helm:
+        releaseName: alloy
+        valueFiles:
+          - $values/infrastructure/alloy/values-staging.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    name: hms-staging
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
