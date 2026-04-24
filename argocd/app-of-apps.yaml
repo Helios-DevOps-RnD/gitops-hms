@@ -24,7 +24,11 @@ spec:
     path: argocd
     directory:
       recurse: true
-      include: '{apps/**/*.yaml,infrastructure/**/*.yaml}'
+      # Match every .yaml under argocd/ (both files directly in infrastructure/
+      # and nested files like apps/staging/xxx.yaml). Exclude app-of-apps.yaml
+      # itself to avoid a self-referential Application.
+      include: '**/*.yaml'
+      exclude: 'app-of-apps.yaml'
 
   destination:
     server: https://kubernetes.default.svc   # mgmt cluster (where ArgoCD lives)
