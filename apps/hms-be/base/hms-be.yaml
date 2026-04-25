@@ -2,9 +2,11 @@
 # hms-be — Express Node 20 backend.
 # Image:  registry.hms.internal/hms/be:<git-sha>  (overlay sets the tag)
 # Port:   3001
-# Secrets (created by Jenkins, NOT in git):
-#   - hms-be-secret       (envFrom)    PG creds, FIREBASE_STORAGE_BUCKET
-#   - hms-firebase-secret (volumeMount) /app/firebase-key.json
+# Secrets (sealed in git via SealedSecret in each overlay):
+#   - hms-be-secret    (envFrom)     PG creds, FIREBASE_STORAGE_BUCKET
+#   - hms-be-firebase  (volumeMount) /app/firebase-key.json (mounted via subPath)
+# Two separate SealedSecrets in apps/hms-be/overlays/<env>/sealed-secret.yaml
+# (split by `---`). Lets Jenkins rotate them independently if needed.
 # ============================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -49,9 +51,8 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/firebase-key.json
           envFrom:
-            # Out-of-band: created by Jenkins before sync.
-            #   PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT, PGSSL,
-            #   FIREBASE_STORAGE_BUCKET
+            # PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT, PGSSL,
+            # FIREBASE_STORAGE_BUCKET. Sealed in overlays/<env>/sealed-secret.yaml.
             - secretRef:
                 name: hms-be-secret
           volumeMounts:
@@ -83,9 +84,9 @@ spec:
       volumes:
         - name: firebase-key
           secret:
-            # Out-of-band: created by Jenkins (kubectl create secret generic
-            # hms-firebase-secret --from-file=firebase-key.json=...).
-            secretName: hms-firebase-secret
+            # Separate SealedSecret (hms-be-firebase) — keeps the binary JSON
+            # rotation independent from env-var rotation in Jenkins.
+            secretName: hms-be-firebase
             items:
               - key: firebase-key.json
                 path: firebase-key.json
