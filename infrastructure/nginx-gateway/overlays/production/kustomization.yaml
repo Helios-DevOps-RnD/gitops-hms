@@ -8,16 +8,11 @@ resources:
   - https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/default/deploy.yaml
   - ../../base
 
-# Public LoadBalancer for the controller Service. Cloudflare proxies in front
-# of this IP and terminates TLS — so we expose HTTP on :80 to Cloudflare's
-# edge over the public internet (Cloudflare → origin is HTTP/Flexible OR
-# strict if you put a self-signed cert here later).
+# NGF v2.x: control plane stays ClusterIP. The data plane Service
+# `hms-gateway-nginx` (auto-created by NGF in namespace `hms` when the
+# Gateway resource exists) is the public LoadBalancer Cloudflare points at.
+# No control plane Service patch needed.
 patches:
-  - path: patch-service-public-lb.yaml
-    target:
-      kind: Service
-      name: nginx-gateway
-      namespace: nginx-gateway
   - path: patch-gateway.yaml
     target:
       kind: Gateway

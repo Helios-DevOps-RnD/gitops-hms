@@ -13,17 +13,14 @@ resources:
   - https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/default/deploy.yaml
   - ../../base
 
-# Patch the controller Service to a PUBLIC Azure LoadBalancer. Cloudflare
-# proxies in front and enforces VPN-only access via an IP Access Rule on the
-# staging hostnames — Cloudflare edge cannot reach an Azure internal LB, so
-# the origin has to be public. The IP restriction happens at Cloudflare.
-# Matches the production overlay (same pattern, different Cloudflare rule).
+# NGF v2.x architecture: control plane (Service `nginx-gateway` in namespace
+# `nginx-gateway`) stays ClusterIP — it's just admin/webhook endpoints. The
+# DATA PLANE is auto-spawned per Gateway resource in the same namespace as
+# the Gateway, with type=LoadBalancer by default (configured by the upstream
+# NginxProxy). For our `hms-gateway` Gateway, NGF creates Service
+# `hms-gateway-nginx` in namespace `hms` automatically — that's the public
+# LB that Cloudflare proxies onto. No Service patch needed here.
 patches:
-  - path: patch-service-public-lb.yaml
-    target:
-      kind: Service
-      name: nginx-gateway
-      namespace: nginx-gateway
   - path: patch-gateway.yaml
     target:
       kind: Gateway
