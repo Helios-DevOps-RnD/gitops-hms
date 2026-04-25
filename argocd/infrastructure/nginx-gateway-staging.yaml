@@ -24,6 +24,13 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # Server-side apply: large CRDs (>262 KB) won't fit in a client-side
+      # last-applied annotation, and SSA also handles "already exists" by
+      # patching instead of erroring out. ArgoCD becomes the field manager.
       - ServerSideApply=true
-      # CRDs in install.yaml are large — let server-side apply own them
-      - Replace=true
+      # CRDs and CRs ship in the same kustomize render. Without this flag
+      # ArgoCD's pre-apply dry-run rejects Gateway/GatewayClass/NginxProxy/
+      # NginxGateway because their CRDs haven't been installed yet on this
+      # pass. The flag tells ArgoCD to skip dry-run for those, apply CRDs
+      # first, then re-converge the CRs in the next sync iteration.
+      - SkipDryRunOnMissingResource=true

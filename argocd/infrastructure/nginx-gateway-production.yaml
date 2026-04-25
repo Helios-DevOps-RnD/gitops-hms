@@ -24,5 +24,10 @@ spec:
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+      # Server-side apply handles "already exists" by patching, and is required
+      # for the large NGF CRDs that exceed the 262KB client-side annotation
+      # limit. ArgoCD becomes the field manager.
       - ServerSideApply=true
-      - Replace=true
+      # CRDs and CRs ship in the same render — skip dry-run for resources whose
+      # CRDs aren't installed yet so ArgoCD can apply CRDs first then converge.
+      - SkipDryRunOnMissingResource=true
