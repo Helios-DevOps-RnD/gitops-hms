@@ -1,8 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# Only the Gateway lives here. The GatewayClass `nginx` is provided by NGF's
+# upstream deploy.yaml (referenced from each overlay) — declaring it again
+# here would clash with the upstream copy ("already registered id"). NGF's
+# default GatewayClass uses the same controllerName we'd write anyway:
+#   gateway.nginx.org/nginx-gateway-controller
 resources:
-  - gatewayclass.yaml
   - gateway.yaml
   # install.yaml is intentionally empty — the upstream CRDs + controller
   # are referenced from each overlay's kustomization.yaml so we can pin

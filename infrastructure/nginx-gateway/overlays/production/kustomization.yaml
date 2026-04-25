@@ -24,5 +24,12 @@ patches:
       name: hms-gateway
       namespace: hms
 
-commonLabels:
-  env: production
+# `commonLabels` was deprecated by kustomize. The new `labels` block lets us
+# control whether the labels also leak into selectors — which we MUST disable,
+# otherwise the upstream NGF Deployment's matchLabels would change and break
+# (selectors are immutable once a Deployment exists).
+labels:
+  - pairs:
+      env: production
+    includeSelectors: false
+    includeTemplates: false

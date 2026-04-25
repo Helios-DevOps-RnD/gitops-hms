@@ -6,7 +6,7 @@ kind: Kustomization
 #   2) NGF's own CRDs
 #   3) NGF controller deployment (creates the `nginx-gateway` namespace,
 #      Deployment, Service, RBAC)
-#   4) Our local base — GatewayClass + Gateway
+#   4) Our local base — Gateway only (GatewayClass comes from NGF's deploy.yaml above)
 resources:
   - https://github.com/nginx/nginx-gateway-fabric.git//config/crd/gateway-api/standard?ref=v2.5.1
   - https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.5.1/deploy/crds.yaml
@@ -30,5 +30,12 @@ patches:
       name: hms-gateway
       namespace: hms
 
-commonLabels:
-  env: staging
+# `commonLabels` was deprecated by kustomize. The new `labels` block lets us
+# control whether the labels also leak into selectors — which we MUST disable,
+# otherwise the upstream NGF Deployment's matchLabels would change and break
+# (selectors are immutable once a Deployment exists).
+labels:
+  - pairs:
+      env: staging
+    includeSelectors: false
+    includeTemplates: false
