@@ -1,6 +1,8 @@
 # HTTPRoute - exposes hms-be via the shared hms-gateway.
-# Cloudflare proxies https://api.hms-staging.evanlwp.my.id -> origin HTTP on
+# Cloudflare proxies https://api-hms-staging.evanlwp.my.id -> origin HTTP on
 # the public Azure LB. VPN-only at Cloudflare (IP Access Rule on 172.20.20.0/24).
+# NOTE: single-level subdomain — Cloudflare Universal SSL only covers *.evanlwp.my.id,
+# nested subdomains (api.hms-staging.*) are NOT covered without ACM.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -11,7 +13,7 @@ spec:
     - name: hms-gateway
       sectionName: http
   hostnames:
-    - api.hms-staging.evanlwp.my.id
+    - api-hms-staging.evanlwp.my.id
   rules:
     - matches:
         - path:
