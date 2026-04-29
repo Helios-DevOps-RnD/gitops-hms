@@ -5,7 +5,10 @@ namespace: hms
 
 resources:
   - hms-be.yaml
+  - configmap.yaml      # non-secret runtime config (overlays patch real values)
 
 # Secrets (`hms-be-secret` + `hms-be-firebase`) are NOT declared at base
 # level — they live per-overlay as SealedSecrets so each env seals against
 # its own cluster key. See overlays/<env>/sealed-secret.yaml.
+# After the secret/configmap split, hms-be-secret carries ONLY the genuine
+# credentials (PGHOST, PGUSER, PGPASSWORD); the rest is in the ConfigMap.

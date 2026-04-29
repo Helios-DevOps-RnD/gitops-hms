@@ -2,11 +2,16 @@
 # hms-be — Express Node 20 backend.
 # Image:  registry.hms.internal/hms/be:<git-sha>  (overlay sets the tag)
 # Port:   3001
-# Secrets (sealed in git via SealedSecret in each overlay):
-#   - hms-be-secret    (envFrom)     PG creds, FIREBASE_STORAGE_BUCKET
-#   - hms-be-firebase  (volumeMount) /app/firebase-key.json (mounted via subPath)
-# Two separate SealedSecrets in apps/hms-be/overlays/<env>/sealed-secret.yaml
-# (split by `---`). Lets Jenkins rotate them independently if needed.
+# Config sources (post-split):
+#   - hms-be-config    ConfigMap, base + per-env patch.
+#                      Non-secret runtime knobs: PGPORT, PGSSL, PGDATABASE,
+#                      FIREBASE_STORAGE_BUCKET.
+#   - hms-be-secret    SealedSecret per overlay. envFrom only.
+#                      Real credentials: PGHOST, PGUSER, PGPASSWORD.
+#   - hms-be-firebase  SealedSecret per overlay. volumeMount via subPath.
+#                      firebase-key.json (Firebase service account).
+# Both SealedSecrets are in apps/hms-be/overlays/<env>/sealed-secret.yaml
+# (one file, two docs separated by `---`).
 # ============================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -51,8 +56,10 @@ spec:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: /app/firebase-key.json
           envFrom:
-            # PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT, PGSSL,
-            # FIREBASE_STORAGE_BUCKET. Sealed in overlays/<env>/sealed-secret.yaml.
+            # Non-secret config: PGPORT, PGSSL, PGDATABASE, FIREBASE_STORAGE_BUCKET
+            - configMapRef:
+                name: hms-be-config
+            # Real credentials: PGHOST, PGUSER, PGPASSWORD
             - secretRef:
                 name: hms-be-secret
           volumeMounts:

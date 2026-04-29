@@ -19,6 +19,10 @@ patches:
     target:
       kind: Deployment
       name: hms-pubsub
+  - path: patch-configmap.yaml
+    target:
+      kind: ConfigMap
+      name: hms-pubsub-config
 
 commonLabels:
   env: production

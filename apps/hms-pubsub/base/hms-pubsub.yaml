@@ -2,8 +2,10 @@
 # hms-pubsub — Express Node service (PG-backed event/queue handler).
 # Image:  registry.hms.internal/hms/pubsub:<git-sha>  (overlay sets the tag)
 # Port:   3002
-# Secrets (created by Jenkins, NOT in git):
-#   - hms-pubsub-secret (envFrom)  PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT
+# Config sources (post-split):
+#   - hms-pubsub-config  ConfigMap, non-secret runtime knobs (PGPORT/PGSSL/PGDATABASE)
+#   - hms-pubsub-secret  SealedSecret per overlay, real PG credentials
+#                        (PGHOST/PGUSER/PGPASSWORD only)
 # ============================================================================
 apiVersion: apps/v1
 kind: Deployment
@@ -45,7 +47,10 @@ spec:
             - name: PORT
               value: "3002"
           envFrom:
-            # Out-of-band: created by Jenkins before sync.
+            # Non-secret config: PGPORT, PGSSL, PGDATABASE
+            - configMapRef:
+                name: hms-pubsub-config
+            # Real credentials: PGHOST, PGUSER, PGPASSWORD
             - secretRef:
                 name: hms-pubsub-secret
           resources:

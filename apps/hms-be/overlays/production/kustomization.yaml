@@ -20,6 +20,10 @@ patches:
     target:
       kind: Deployment
       name: hms-be
+  - path: patch-configmap.yaml
+    target:
+      kind: ConfigMap
+      name: hms-be-config
 
 commonLabels:
   env: production

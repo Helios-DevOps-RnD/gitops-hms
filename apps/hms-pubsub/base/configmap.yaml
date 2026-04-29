@@ -1,0 +1,14 @@
+# ============================================================================
+# Non-secret runtime config for hms-pubsub. Overlays patch values per env.
+# Same split rationale as hms-be — only PG credentials stay in SealedSecret.
+# pubsub does NOT use Firebase, so this ConfigMap is shorter.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-pubsub-config
+  namespace: hms
+data:
+  PGPORT: "5432"
+  PGSSL: "true"
+  PGDATABASE: "placeholder"
