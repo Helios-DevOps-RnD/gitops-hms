@@ -1,6 +1,6 @@
 # ============================================================================
 # hms-fe — Next.js 14 frontend.
-# Image:  registry.hms.internal/hms/fe:<git-sha>  (overlay sets the tag)
+# Image:  registry.hms.evanlwp.my.id/hms/fe:<git-sha>  (overlay sets the tag)
 # Port:   3000
 # ============================================================================
 apiVersion: apps/v1
@@ -32,7 +32,7 @@ spec:
       containers:
         - name: hms-fe
           # Tag is patched by the overlay (Jenkins updates patch-image.yaml per build).
-          image: registry.hms.internal/hms/fe:placeholder
+          image: registry.hms.evanlwp.my.id/hms/fe:placeholder
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

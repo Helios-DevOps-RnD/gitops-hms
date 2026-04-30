@@ -1,0 +1,19 @@
+# ============================================================================
+# PLACEHOLDER — Jenkins overwrites this file on every staging build from the
+# `hms-fe-staging-config` Jenkins credential (key=value lines).
+#
+# Keys:
+#   API_URL    — base URL for hms-be (browser calls this for REST API)
+#   CREATE_URL — base URL for hms-pubsub (browser calls this for user creation)
+#
+# These are runtime-injected by entrypoint.sh into /public/env-config.js as
+# window.__ENV__.API_URL / .CREATE_URL. NOT baked at build time.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-fe-config
+  namespace: hms
+data:
+  API_URL: "https://api-hms-staging.evanlwp.my.id"
+  CREATE_URL: "https://pubsub-hms-staging.evanlwp.my.id"

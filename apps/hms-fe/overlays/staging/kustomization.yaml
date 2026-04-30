@@ -6,6 +6,9 @@ namespace: hms
 resources:
   - ../../base
   - httproute.yaml
+  # Full ConfigMap — Jenkins overwrites on every build (hms-fe-staging-config credential).
+  # patch-configmap.yaml lama masih ada di folder tapi tidak lagi direferensikan.
+  - configmap.yaml
 
 patches:
   - path: patch-image.yaml
@@ -16,10 +19,6 @@ patches:
     target:
       kind: Deployment
       name: hms-fe
-  - path: patch-configmap.yaml
-    target:
-      kind: ConfigMap
-      name: hms-fe-config
 
 commonLabels:
   env: staging

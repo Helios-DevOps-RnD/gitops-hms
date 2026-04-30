@@ -1,6 +1,6 @@
 # ============================================================================
 # hms-pubsub — Express Node service (PG-backed event/queue handler).
-# Image:  registry.hms.internal/hms/pubsub:<git-sha>  (overlay sets the tag)
+# Image:  registry.hms.evanlwp.my.id/hms/pubsub:<git-sha>  (overlay sets the tag)
 # Port:   3002
 # Config sources (post-split):
 #   - hms-pubsub-config  ConfigMap, non-secret runtime knobs (PGPORT/PGSSL/PGDATABASE)
@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
         - name: hms-pubsub
-          image: registry.hms.internal/hms/pubsub:placeholder
+          image: registry.hms.evanlwp.my.id/hms/pubsub:placeholder
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

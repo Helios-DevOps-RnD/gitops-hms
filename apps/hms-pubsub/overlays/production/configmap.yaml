@@ -1,7 +1,7 @@
 # ============================================================================
-# Non-secret runtime config for hms-pubsub. Overlays patch values per env.
-# Same split rationale as hms-be — only PG credentials stay in SealedSecret.
-# pubsub does NOT use Firebase, so this ConfigMap is shorter.
+# PLACEHOLDER — Jenkins overwrites this file on every production build from
+# the `hms-pubsub-prod-config` Jenkins credential (key=value lines).
+# See staging/configmap.yaml for key documentation.
 # ============================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -11,4 +11,4 @@ metadata:
 data:
   PGPORT: "5432"
   PGSSL: "true"
-  PGDATABASE: "placeholder"
+  PGDATABASE: "postgres"

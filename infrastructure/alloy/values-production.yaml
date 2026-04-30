@@ -24,8 +24,8 @@ alloy:
 
       loki.write "default" {
         endpoint {
-          // TODO: same internal LB IP as staging (Loki on mgmt is one place)
-          url = "http://10.0.X.X/loki/api/v1/push"
+          // loki-gateway internal LB on mgmt (same endpoint as staging)
+          url = "http://10.0.1.8/loki/api/v1/push"
         }
         external_labels = {
           cluster = "production",
@@ -40,7 +40,8 @@ alloy:
 
       prometheus.remote_write "default" {
         endpoint {
-          url = "http://10.0.X.X/api/v1/push"
+          // mimir-nginx internal LB on mgmt (same endpoint as staging)
+          url = "http://10.0.1.9/api/v1/push"
         }
         external_labels = {
           cluster = "production",

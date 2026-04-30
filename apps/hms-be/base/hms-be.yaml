@@ -1,6 +1,6 @@
 # ============================================================================
 # hms-be — Express Node 20 backend.
-# Image:  registry.hms.internal/hms/be:<git-sha>  (overlay sets the tag)
+# Image:  registry.hms.evanlwp.my.id/hms/be:<git-sha>  (overlay sets the tag)
 # Port:   3001
 # Config sources (post-split):
 #   - hms-be-config    ConfigMap, base + per-env patch.
@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: hms-be
-          image: registry.hms.internal/hms/be:placeholder
+          image: registry.hms.evanlwp.my.id/hms/be:placeholder
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

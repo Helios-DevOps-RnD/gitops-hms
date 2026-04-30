@@ -1,4 +1,4 @@
 # Image tag for PROD — Jenkins (or manual promotion) overwrites this.
 - op: replace
   path: /spec/template/spec/containers/0/image
-  value: registry.hms.internal/hms/fe:placeholder
+  value: registry.hms.evanlwp.my.id/hms/fe:5985fdd

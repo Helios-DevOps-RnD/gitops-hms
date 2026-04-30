@@ -1,9 +1,0 @@
-# Staging-specific values for hms-be ConfigMap.
-# Adjust PGDATABASE / FIREBASE_STORAGE_BUCKET to match your actual staging DB
-# and Firebase project. PGPORT/PGSSL inherited from base unless changed here.
-- op: replace
-  path: /data/PGDATABASE
-  value: "postgres"
-- op: replace
-  path: /data/FIREBASE_STORAGE_BUCKET
-  value: "hms-devops-enablement-staging"

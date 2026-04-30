@@ -1,0 +1,15 @@
+# ============================================================================
+# PLACEHOLDER - Jenkins overwrites this file on every production build from
+# the `hms-be-prod-config` Jenkins credential (key=value lines, .env style).
+# See staging/configmap.yaml for the full rationale.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-be-config
+  namespace: hms
+data:
+  FIREBASE_STORAGE_BUCKET: hms-devops-enablement-prod
+  PGDATABASE: postgres
+  PGPORT: "5432"
+  PGSSL: "true"

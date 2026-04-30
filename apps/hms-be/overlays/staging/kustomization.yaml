@@ -6,9 +6,10 @@ namespace: hms
 resources:
   - ../../base
   - httproute.yaml
-  # SealedSecret for PGPASSWORD + firebase-key.json. File is a placeholder
-  # on first commit; Jenkins overwrites it (kubeseal against staging-pub.pem)
-  # on every staging build and commits the real encrypted data.
+  # configmap.yaml + sealed-secret.yaml are BOTH Jenkins-generated on every
+  # staging build. configmap = non-secret app config (PG conn knobs, bucket).
+  # sealed-secret = encrypted real credentials (PGHOST/USER/PASS + firebase-key).
+  - configmap.yaml
   - sealed-secret.yaml
 
 patches:
@@ -20,10 +21,6 @@ patches:
     target:
       kind: Deployment
       name: hms-be
-  - path: patch-configmap.yaml
-    target:
-      kind: ConfigMap
-      name: hms-be-config
 
 commonLabels:
   env: staging

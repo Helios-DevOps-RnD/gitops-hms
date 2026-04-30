@@ -1,4 +1,0 @@
-# Staging-specific values for hms-pubsub ConfigMap.
-- op: replace
-  path: /data/PGDATABASE
-  value: "postgres"

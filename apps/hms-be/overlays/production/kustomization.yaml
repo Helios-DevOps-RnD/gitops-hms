@@ -6,9 +6,10 @@ namespace: hms
 resources:
   - ../../base
   - httproute.yaml
-  # SealedSecret for PGPASSWORD + firebase-key.json. Sealed against prod
-  # cluster cert (prod-pub.pem in Jenkins creds) — staging-sealed data will
-  # NOT decrypt here.
+  # configmap.yaml + sealed-secret.yaml are BOTH Jenkins-generated on every
+  # production build. SealedSecret is sealed with prod-pub.pem so staging
+  # encrypted data will NOT decrypt here.
+  - configmap.yaml
   - sealed-secret.yaml
 
 patches:
@@ -20,10 +21,6 @@ patches:
     target:
       kind: Deployment
       name: hms-be
-  - path: patch-configmap.yaml
-    target:
-      kind: ConfigMap
-      name: hms-be-config
 
 commonLabels:
   env: production

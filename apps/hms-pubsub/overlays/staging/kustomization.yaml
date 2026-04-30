@@ -6,8 +6,10 @@ namespace: hms
 resources:
   - ../../base
   - httproute.yaml
-  # SealedSecret for PGPASSWORD. Jenkins overwrites on each staging build
-  # (sealed against staging-pub.pem).
+  # Full ConfigMap — Jenkins overwrites on every build (hms-pubsub-staging-config credential).
+  # patch-configmap.yaml lama masih ada di folder tapi tidak lagi direferensikan.
+  - configmap.yaml
+  # SealedSecret: PGHOST, PGUSER, PGPASSWORD (dari hms-staging-env-file, sealed dengan staging-pubcert.pem).
   - sealed-secret.yaml
 
 patches:
@@ -19,10 +21,6 @@ patches:
     target:
       kind: Deployment
       name: hms-pubsub
-  - path: patch-configmap.yaml
-    target:
-      kind: ConfigMap
-      name: hms-pubsub-config
 
 commonLabels:
   env: staging

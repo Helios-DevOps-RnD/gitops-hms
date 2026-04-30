@@ -32,9 +32,8 @@ alloy:
 
       loki.write "default" {
         endpoint {
-          // TODO: replace with the internal LB IP of `loki-gateway` on mgmt
-          //   (look it up after the loki Application syncs on mgmt)
-          url = "http://10.0.X.X/loki/api/v1/push"
+          // loki-gateway internal LB on mgmt — kubectl -n monitoring get svc loki-gateway
+          url = "http://10.0.1.8/loki/api/v1/push"
         }
         external_labels = {
           cluster = "staging",
@@ -50,8 +49,8 @@ alloy:
 
       prometheus.remote_write "default" {
         endpoint {
-          // TODO: replace with the internal LB IP of `mimir-nginx` on mgmt
-          url = "http://10.0.X.X/api/v1/push"
+          // mimir-nginx internal LB on mgmt — kubectl -n monitoring get svc mimir-nginx
+          url = "http://10.0.1.9/api/v1/push"
         }
         external_labels = {
           cluster = "staging",

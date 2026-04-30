@@ -1,0 +1,13 @@
+# ============================================================================
+# PLACEHOLDER — Jenkins overwrites this file on every production build from
+# the `hms-fe-prod-config` Jenkins credential (key=value lines).
+# See staging/configmap.yaml for key documentation.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-fe-config
+  namespace: hms
+data:
+  API_URL: "https://api.hms.evanlwp.my.id"
+  CREATE_URL: "https://pubsub.hms.evanlwp.my.id"

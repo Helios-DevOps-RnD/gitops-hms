@@ -5,9 +5,11 @@ namespace: hms
 
 resources:
   - hms-pubsub.yaml
-  - configmap.yaml      # non-secret runtime config (overlays patch real values)
+  # base/configmap.yaml dikeluarkan dari sini — tiap overlay punya
+  # configmap.yaml penuh yang di-generate Jenkins (hms-pubsub-{env}-config credential).
+  # File base/configmap.yaml tetap ada sebagai dokumentasi keys yang dipakai.
 
 # `hms-pubsub-secret` lives as a SealedSecret per overlay so each env seals
 # against its own cluster key. See overlays/<env>/sealed-secret.yaml.
-# After the secret/configmap split, hms-pubsub-secret carries ONLY the real
-# credentials (PGHOST, PGUSER, PGPASSWORD); the rest is in the ConfigMap.
+# hms-pubsub-secret carries ONLY the real credentials (PGHOST, PGUSER, PGPASSWORD);
+# non-secret config (PGPORT, PGSSL, PGDATABASE) ada di overlay configmap.yaml.

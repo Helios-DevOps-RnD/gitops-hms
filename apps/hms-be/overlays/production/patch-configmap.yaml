@@ -1,7 +1,0 @@
-# Production-specific values for hms-be ConfigMap.
-- op: replace
-  path: /data/PGDATABASE
-  value: "hms_prod"
-- op: replace
-  path: /data/FIREBASE_STORAGE_BUCKET
-  value: "hms-prod.firebasestorage.app"

@@ -25,7 +25,12 @@ persistence:
   storageClassName: managed-csi
 
 service:
-  type: ClusterIP                  # access via port-forward initially
+  type: LoadBalancer
+  annotations:
+    # Internal LB — hanya bisa diakses dari dalam VNet (via P2S VPN).
+    # Setelah sync: kubectl -n monitoring get svc grafana → dapat IP 10.0.x.x
+    # Akses di browser: http://<IP> (port 80)
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 
 # ----- Datasources auto-provisioned on startup -----
 # These point at the in-cluster Loki/Mimir Services. Grafana is on the SAME

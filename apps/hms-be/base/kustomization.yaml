@@ -5,10 +5,14 @@ namespace: hms
 
 resources:
   - hms-be.yaml
-  - configmap.yaml      # non-secret runtime config (overlays patch real values)
 
-# Secrets (`hms-be-secret` + `hms-be-firebase`) are NOT declared at base
-# level — they live per-overlay as SealedSecrets so each env seals against
-# its own cluster key. See overlays/<env>/sealed-secret.yaml.
-# After the secret/configmap split, hms-be-secret carries ONLY the genuine
-# credentials (PGHOST, PGUSER, PGPASSWORD); the rest is in the ConfigMap.
+# Both ConfigMap (`hms-be-config`) and SealedSecrets (`hms-be-secret` +
+# `hms-be-firebase`) are owned by Jenkins per-env — Jenkins regenerates them
+# on each build and commits to overlays/<env>/. Centralising values in
+# Jenkins credentials means rotating a DB host or bucket name only requires
+# updating the credential and triggering a build; gitops repo just records
+# the rendered output.
+#
+# This is the deliberate trade-off: we accept weaker git audit (Jenkins build
+# log carries the "who/why") in exchange for a single point-of-edit for ops.
+# See overlays/<env>/{configmap,sealed-secret}.yaml — both Jenkins-generated.

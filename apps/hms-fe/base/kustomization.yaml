@@ -5,4 +5,6 @@ namespace: hms
 
 resources:
   - hms-fe.yaml
-  - configmap.yaml
+  # base/configmap.yaml dikeluarkan dari sini — tiap overlay punya
+  # configmap.yaml penuh yang di-generate Jenkins (hms-fe-{env}-config credential).
+  # File base/configmap.yaml tetap ada sebagai dokumentasi keys yang dipakai.

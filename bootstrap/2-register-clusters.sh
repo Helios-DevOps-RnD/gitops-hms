@@ -44,12 +44,12 @@ argocd cluster add "${STAGING_CTX}" \
 # ---------------------------------------------------------------------------
 # PRODUCTION (Phase 2 — uncomment when prod cluster exists)
 # ---------------------------------------------------------------------------
-# echo "[+] Registering PROD cluster as '${PROD_NAME}' (context: ${PROD_CTX})"
-# argocd cluster add "${PROD_CTX}" \
-#   --name "${PROD_NAME}" \
-#   --label "env=production" \
-#   --label "managed-by=argocd" \
-#   --yes
+echo "[+] Registering PROD cluster as '${PROD_NAME}' (context: ${PROD_CTX})"
+argocd cluster add "${PROD_CTX}" \
+  --name "${PROD_NAME}" \
+  --label "env=production" \
+  --label "managed-by=argocd" \
+  --yes
 
 echo
 echo "[+] Registered clusters:"
