@@ -1,4 +1,4 @@
-# HTTPRoute — exposes hms-be at https://api.hms.evanlwp.my.id (Cloudflare proxied).
+# HTTPRoute — exposes hms-be at https://api-hms.evanlwp.my.id (Cloudflare proxied).
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -9,7 +9,7 @@ spec:
     - name: hms-gateway
       sectionName: http
   hostnames:
-    - api.hms.evanlwp.my.id
+    - api-hms.evanlwp.my.id
   rules:
     - matches:
         - path:
