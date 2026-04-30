@@ -9,5 +9,5 @@ metadata:
   name: hms-fe-config
   namespace: hms
 data:
-  API_URL: "https://api.hms.evanlwp.my.id"
-  CREATE_URL: "https://pubsub.hms.evanlwp.my.id"
+  API_URL: "https://api-hms.evanlwp.my.id"
+  CREATE_URL: "https://pubsub-hms.evanlwp.my.id"
