@@ -1,0 +1,138 @@
+# ============================================================================
+# Mimir — single-binary monolithic deployment.
+# Replaces the mimir-distributed Helm chart which does NOT support
+# deploymentMode: monolithic in any released version (PR #4858 was abandoned).
+#
+# Push endpoint  (Alloy remote_write):  http://mimir.monitoring.svc/api/v1/push
+# Query endpoint (Grafana datasource):  http://mimir.monitoring.svc/prometheus
+#
+# Cross-cluster access (staging/prod Alloy): use the LB IP below.
+# After first sync: kubectl -n monitoring get svc mimir-lb → IP 10.0.x.x
+# Update infrastructure/alloy/values-staging.yaml and values-production.yaml
+# with the actual IP from Azure.
+# ============================================================================
+
+# ---- StatefulSet ----
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mimir
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir
+    app.kubernetes.io/component: metrics-store
+spec:
+  replicas: 1
+  serviceName: mimir-headless
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mimir
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mimir
+        app.kubernetes.io/component: metrics-store
+    spec:
+      containers:
+        - name: mimir
+          image: grafana/mimir:2.14.0
+          args:
+            - -config.file=/etc/mimir/config.yaml
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: mimir-config
+              mountPath: /etc/mimir
+              readOnly: true
+            - name: mimir-data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 5
+      volumes:
+        - name: mimir-config
+          configMap:
+            name: mimir-config
+  volumeClaimTemplates:
+    - metadata:
+        name: mimir-data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: managed-csi
+        resources:
+          requests:
+            storage: 20Gi
+---
+# ---- Headless Service (required by StatefulSet) ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: mimir-headless
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: mimir
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+# ---- ClusterIP Service — Grafana + mgmt-cluster Alloy ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: mimir
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mimir
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# ---- Internal LoadBalancer — staging & prod Alloy (cross-cluster) ----
+apiVersion: v1
+kind: Service
+metadata:
+  name: mimir-lb
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir
+  annotations:
+    # Azure: internal LB, reachable only from inside the VNet (hub-spoke peering).
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: mimir
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

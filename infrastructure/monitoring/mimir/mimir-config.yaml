@@ -1,0 +1,58 @@
+# ============================================================================
+# Mimir config — monolithic mode (--target=all)
+# All Mimir components run in a single pod sharing one filesystem PVC.
+# Filesystem storage only works for single-node monolithic; if you later
+# scale out, migrate to Azure Blob Storage and switch to mimir-distributed.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: monitoring
+data:
+  config.yaml: |
+    # Disable multi-tenancy: Alloy does not need X-Scope-OrgID header.
+    multitenancy_enabled: false
+
+    # All components (distributor, ingester, querier, etc.) run in this one process.
+    target: all
+
+    # ---- Storage: filesystem (single-node safe) ----
+    blocks_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/tsdb
+
+    compactor:
+      data_dir: /data/compactor
+
+    ruler_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/ruler
+
+    alertmanager_storage:
+      backend: filesystem
+      filesystem:
+        dir: /data/alertmanager
+
+    # ---- Single-node ring settings ----
+    # Default replication_factor is 3; set to 1 for a single-node setup.
+    ingester:
+      ring:
+        replication_factor: 1
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: 1
+
+    # ---- Retention & limits ----
+    limits:
+      compactor_blocks_retention_period: 168h   # 7 days
+      ingestion_rate: 100000
+      ingestion_burst_size: 200000
+
+    # ---- Server ----
+    server:
+      http_listen_port: 8080
+      log_level: info
