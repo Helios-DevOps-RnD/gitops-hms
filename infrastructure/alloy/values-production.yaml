@@ -1,8 +1,12 @@
 # ============================================================================
 # Grafana Alloy — values for the PROD cluster
 # ----------------------------------------------------------------------------
-# Same as staging, just labelled `cluster=production` so Grafana queries can
-# segment. Ships to the same mgmt Loki/Mimir endpoints.
+# Same config as staging, labelled cluster=production.
+# Ships ACROSS VNet peering to mgmt cluster Loki + Mimir internal LBs.
+#
+# After mimir-lb sync, get the new IP:
+#   kubectl --context devops-aks-mgmt -n monitoring get svc mimir-lb
+# Update MIMIR_URL below if different from 10.0.1.9.
 # ============================================================================
 
 controller:
@@ -16,15 +20,50 @@ alloy:
   configMap:
     create: true
     content: |
+      // =====================================================================
+      // LOGS — pod logs with Kubernetes metadata labels
+      // =====================================================================
+
+      discovery.kubernetes "pods" {
+        role = "pod"
+      }
+
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_pod_phase"]
+          regex         = "Pending|Succeeded|Failed|Completed"
+          action        = "drop"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          target_label  = "app"
+          regex         = "(.+)"
+          replacement   = "$1"
+        }
+      }
+
       loki.source.kubernetes "pods" {
-        targets    = discovery.kubernetes.pods.targets
+        targets    = discovery.relabel.pod_logs.output
         forward_to = [loki.write.default.receiver]
       }
-      discovery.kubernetes "pods" { role = "pod" }
 
       loki.write "default" {
         endpoint {
-          // loki-gateway internal LB on mgmt (same endpoint as staging)
+          // loki-gateway internal LB on mgmt.
           url = "http://10.0.1.8/loki/api/v1/push"
         }
         external_labels = {
@@ -32,15 +71,53 @@ alloy:
         }
       }
 
+      // =====================================================================
+      // METRICS — kubelet + cAdvisor
+      // =====================================================================
+
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      discovery.relabel "nodes" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+        rule {
+          source_labels = ["__address__"]
+          regex         = "(.+):.*"
+          replacement   = "$1:10250"
+          target_label  = "__address__"
+        }
+      }
+
       prometheus.scrape "kubelet" {
-        targets    = discovery.kubernetes.nodes.targets
+        targets    = discovery.relabel.nodes.output
+        scheme     = "https"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
         forward_to = [prometheus.remote_write.default.receiver]
       }
-      discovery.kubernetes "nodes" { role = "node" }
+
+      prometheus.scrape "cadvisor" {
+        targets      = discovery.relabel.nodes.output
+        scheme       = "https"
+        metrics_path = "/metrics/cadvisor"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
 
       prometheus.remote_write "default" {
         endpoint {
-          // mimir-nginx internal LB on mgmt (same endpoint as staging)
+          // mimir-lb internal LB on mgmt — update IP if mimir-lb got a new address.
           url = "http://10.0.1.9/api/v1/push"
         }
         external_labels = {

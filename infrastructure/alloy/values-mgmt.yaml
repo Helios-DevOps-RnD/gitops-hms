@@ -1,50 +1,77 @@
 # ============================================================================
 # Grafana Alloy — values for the MGMT cluster
 # ----------------------------------------------------------------------------
-# Alloy is the agent that scrapes logs/metrics on every cluster and ships
-# them to a central Loki + Mimir on the mgmt cluster.
+# Ships to Loki/Mimir IN-CLUSTER (no LB hop): cheaper + lower latency.
+# external_labels.cluster=mgmt so Grafana can filter by source cluster.
 #
-# This file is values for the official Helm chart `grafana/alloy`.
-# It is consumed by the ArgoCD Application argocd/infrastructure/alloy-mgmt.yaml.
-#
-# Mgmt-specific behaviour:
-#   - Ships to Loki/Mimir IN-CLUSTER (no LB hop): cheaper + lower latency.
-#   - external_labels.cluster=mgmt so Grafana can filter by source cluster.
+# Pipelines:
+#   1) Pod logs → Loki  (with namespace/pod/container/app labels)
+#   2) Kubelet metrics (HTTPS, port 10250) → Mimir
+#   3) cAdvisor metrics (HTTPS, /metrics/cadvisor) → Mimir
 # ============================================================================
 
 controller:
-  type: daemonset                # one Alloy pod per node, scrapes node-local data
-  replicas: 1                    # ignored for daemonset; explicit for clarity
+  type: daemonset
+  replicas: 1
 
-# Run as root for /var/log access. Locked down further in Phase 3.5 with
-# pod security profiles + a non-root config dir.
 alloy:
   uiPathPrefix: /
   resources:
     requests: { cpu: 50m,  memory: 128Mi }
     limits:   { cpu: 500m, memory: 512Mi }
 
-  # ----- Alloy River config (the brain of the agent) -----
-  # This is intentionally small. Three pipelines:
-  #   1) Scrape pod logs from /var/log/pods → push to Loki
-  #   2) Scrape pod metrics from annotated pods → remote_write to Mimir
-  #   3) Scrape kubelet/cadvisor metrics → remote_write to Mimir
   configMap:
     create: true
     content: |
-      // ---------- LOGS ----------
-      loki.source.kubernetes "pods" {
-        targets    = discovery.kubernetes.pods.targets
-        forward_to = [loki.write.default.receiver]
-      }
+      // =====================================================================
+      // LOGS — pod logs with Kubernetes metadata labels
+      // =====================================================================
 
+      // Discover all pods and enrich with K8s metadata labels.
       discovery.kubernetes "pods" {
         role = "pod"
       }
 
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        // Drop pods that are not running (completed/evicted).
+        rule {
+          source_labels = ["__meta_kubernetes_pod_phase"]
+          regex         = "Pending|Succeeded|Failed|Completed"
+          action        = "drop"
+        }
+
+        // Inject namespace, pod, container, app labels into every log line.
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label  = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        // app label from the standard k8s label (set on all hms-* pods).
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          target_label  = "app"
+          regex         = "(.+)"
+          replacement   = "$1"
+        }
+      }
+
+      loki.source.kubernetes "pods" {
+        targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.write.default.receiver]
+      }
+
       loki.write "default" {
         endpoint {
-          // In-cluster — Loki Service in the `monitoring` namespace.
+          // In-cluster Loki gateway.
           url = "http://loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
         }
         external_labels = {
@@ -52,26 +79,65 @@ alloy:
         }
       }
 
-      // ---------- METRICS ----------
-      prometheus.scrape "kubelet" {
-        targets    = discovery.kubernetes.nodes.targets
-        forward_to = [prometheus.remote_write.default.receiver]
-      }
+      // =====================================================================
+      // METRICS — kubelet + cAdvisor
+      // =====================================================================
 
       discovery.kubernetes "nodes" {
         role = "node"
       }
 
+      // Relabel nodes to carry the node name as a label on every metric.
+      discovery.relabel "nodes" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+        // Kubelet HTTPS endpoint — port 10250.
+        rule {
+          source_labels = ["__address__"]
+          regex         = "(.+):.*"
+          replacement   = "$1:10250"
+          target_label  = "__address__"
+        }
+      }
+
+      // Kubelet /metrics (resource usage, runtime info).
+      prometheus.scrape "kubelet" {
+        targets    = discovery.relabel.nodes.output
+        scheme     = "https"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
+      // cAdvisor /metrics/cadvisor (container CPU/mem/net/disk).
+      prometheus.scrape "cadvisor" {
+        targets      = discovery.relabel.nodes.output
+        scheme       = "https"
+        metrics_path = "/metrics/cadvisor"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
       prometheus.remote_write "default" {
         endpoint {
-          // In-cluster — Mimir Service in the `monitoring` namespace.
-          url = "http://mimir-nginx.monitoring.svc.cluster.local/api/v1/push"
+          // In-cluster Mimir (ClusterIP service, replaced mimir-nginx).
+          url = "http://mimir.monitoring.svc.cluster.local/api/v1/push"
         }
         external_labels = {
           cluster = "mgmt",
         }
       }
 
-# Service account needs RBAC to list pods/nodes — chart provides it by default.
+# Chart default ClusterRole includes nodes/metrics, nodes/proxy, pods — sufficient
+# for kubelet + cAdvisor scraping without extra RBAC.
 serviceAccount:
   create: true
