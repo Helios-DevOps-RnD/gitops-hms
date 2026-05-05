@@ -1,4 +1,4 @@
 # Image tag for STAGING — Jenkins overwrites this on every build.
 - op: replace
   path: /spec/template/spec/containers/0/image
-  value: registry.hms.evanlwp.my.id/hms/pubsub:b71377f
+  value: registry.hms.evanlwp.my.id/hms/pubsub:3379737
