@@ -1,20 +1,10 @@
-# ============================================================================
-# PLACEHOLDER — Jenkins overwrites this file on every staging build from the
-# `hms-pubsub-staging-config` Jenkins credential (key=value lines).
-#
-# Keys:
-#   PGPORT     — PostgreSQL port (default 5432)
-#   PGSSL      — Enable SSL for Azure PostgreSQL ("true")
-#   PGDATABASE — Target database name (staging)
-#
-# NOTE: pubsub does NOT use Firebase — FIREBASE_STORAGE_BUCKET tidak ada di sini.
-# ============================================================================
 apiVersion: v1
+data:
+  FIREBASE_STORAGE_BUCKET: hms-devops-enablement-staging
+  PGDATABASE: postgres
+  PGPORT: "5432"
+  PGSSL: "true"
 kind: ConfigMap
 metadata:
   name: hms-pubsub-config
   namespace: hms
-data:
-  PGPORT: "5432"
-  PGSSL: "true"
-  PGDATABASE: "postgres"
