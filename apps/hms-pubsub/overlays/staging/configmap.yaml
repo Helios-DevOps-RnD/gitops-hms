@@ -1,10 +1,10 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hms-pubsub-config
+  namespace: hms
 data:
   FIREBASE_STORAGE_BUCKET: hms-devops-enablement-staging
   PGDATABASE: postgres
   PGPORT: "5432"
   PGSSL: "true"
-kind: ConfigMap
-metadata:
-  name: hms-pubsub-config
-  namespace: hms
