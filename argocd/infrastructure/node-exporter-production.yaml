@@ -1,0 +1,35 @@
+# ============================================================================
+# ArgoCD Application — prometheus-node-exporter on the PROD cluster.
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-exporter-production
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-node-exporter
+      targetRevision: 4.55.0
+      helm:
+        releaseName: prometheus-node-exporter
+        valueFiles:
+          - $values/infrastructure/node-exporter/values.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    name: hms-prod
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

@@ -1,0 +1,29 @@
+# ============================================================================
+# prometheus-node-exporter — shared values (all clusters)
+# ----------------------------------------------------------------------------
+# Deploys as DaemonSet on every node including tainted control-plane nodes.
+# Alloy scrapes port 9100 on each node via discovery.kubernetes "nodes".
+# ============================================================================
+
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
+  - effect: NoExecute
+    operator: Exists
+
+# Required on AKS for full OS-level metrics (filesystem, network, processes).
+hostNetwork: true
+hostPID: true
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# Expose the node name as a label on every metric.
+extraArgs:
+  - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+  - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$

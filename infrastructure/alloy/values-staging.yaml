@@ -114,6 +114,27 @@ alloy:
         forward_to = [prometheus.remote_write.default.receiver]
       }
 
+      // node-exporter :9100 (OS-level: CPU, memory, disk, network, filesystem).
+      discovery.relabel "node_exporter" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+        rule {
+          source_labels = ["__address__"]
+          regex         = "(.+):.*"
+          replacement   = "$1:9100"
+          target_label  = "__address__"
+        }
+      }
+
+      prometheus.scrape "node_exporter" {
+        targets    = discovery.relabel.node_exporter.output
+        forward_to = [prometheus.remote_write.default.receiver]
+      }
+
       prometheus.remote_write "default" {
         endpoint {
           // mimir-lb internal LB on mgmt — update IP if mimir-lb got a new address.

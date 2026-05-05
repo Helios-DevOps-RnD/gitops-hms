@@ -1,0 +1,40 @@
+# ============================================================================
+# ArgoCD Application — prometheus-node-exporter on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# DaemonSet exposing OS-level node metrics on port 9100.
+# Alloy scrapes it via discovery.kubernetes "nodes" remapped to :9100.
+#
+# Sync wave -5: deploys alongside Alloy, before workloads (0).
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-exporter-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-node-exporter
+      targetRevision: 4.55.0
+      helm:
+        releaseName: prometheus-node-exporter
+        valueFiles:
+          - $values/infrastructure/node-exporter/values.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc   # mgmt (in-cluster)
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
