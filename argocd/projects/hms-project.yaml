@@ -24,6 +24,8 @@ spec:
     - https://grafana.github.io/helm-charts
     # Sealed Secrets controller (one install per cluster, keypair lives in-cluster)
     - https://bitnami-labs.github.io/sealed-secrets
+    # Prometheus community charts (node-exporter)
+    - https://prometheus-community.github.io/helm-charts
 
   destinations:
     # mgmt cluster (where ArgoCD itself lives) - for ArgoCD self-management later
