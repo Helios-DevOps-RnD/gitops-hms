@@ -7,6 +7,7 @@ GitOps repository for the HMS platform on AKS.
 - **Image registry:** Harbor at `registry.hms.internal/hms`
 - **Gateway:** NGINX Gateway Fabric v2.5.1 — internal LB on staging, public LB (Cloudflare-proxied TLS) on prod
 - **Secrets:** managed via [Sealed Secrets](https://github.com/bitnami-labs/sealed-secrets). Jenkins seals raw values with `kubeseal --cert <env>-pub.pem` and commits the encrypted `SealedSecret` manifests to this repo; the in-cluster controller decrypts them into regular `Secret`s.
+- **Change governance:** see [GITOPS_CHANGE_POLICY.md](GITOPS_CHANGE_POLICY.md) for PR scope, approval, promotion, and deployment guardrails.
 
 ---
 
