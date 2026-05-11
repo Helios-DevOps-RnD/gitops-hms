@@ -61,3 +61,20 @@ sidecar:
     label: grafana_dashboard
   datasources:
     enabled: false                 # we provision via the values block above
+
+# ----- SMTP (Gmail) -----
+# Raw secret ada di Azure Key Vault.
+# SealedSecret: infrastructure/monitoring/grafana/grafana-smtp-sealed-secret.yaml
+# Cara generate: secret/mgmt/README-grafana-smtp.md
+grafana.ini:
+  smtp:
+    enabled: true
+    host: smtp.gmail.com:587
+    from_address: devopshin@gmail.com
+    from_name: Grafana HIN
+    startTLS_policy: MandatoryStartTLS
+
+smtp:
+  existingSecret: grafana-smtp-secret
+  userKey: user
+  passwordKey: password
