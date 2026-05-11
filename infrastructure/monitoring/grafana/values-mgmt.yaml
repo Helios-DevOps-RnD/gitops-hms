@@ -64,17 +64,34 @@ sidecar:
 
 # ----- SMTP (Gmail) -----
 # Raw secret ada di Azure Key Vault.
-# SealedSecret: infrastructure/monitoring/grafana/grafana-smtp-sealed-secret.yaml
-# Cara generate: secret/mgmt/README-grafana-smtp.md
+# Cara generate ulang: secret/mgmt/README-grafana-smtp.md
 grafana.ini:
   smtp:
     enabled: true
     host: smtp.gmail.com:587
     from_address: devopshin@gmail.com
-    from_name: Grafana HIN
+    from_name: Grafana HMS
     startTLS_policy: MandatoryStartTLS
 
 smtp:
   existingSecret: grafana-smtp-secret
   userKey: user
   passwordKey: password
+
+# ----- SealedSecret disertakan di sini supaya ikut Helm release -----
+# ArgoCD Application ini Helm-only (source kedua hanya ref:values),
+# jadi raw manifest terpisah tidak akan di-sync. Solusi: extraObjects.
+extraObjects:
+  - apiVersion: bitnami.com/v1alpha1
+    kind: SealedSecret
+    metadata:
+      name: grafana-smtp-secret
+      namespace: monitoring
+    spec:
+      encryptedData:
+        password: AgA93lDoZWqHlfpCEbgUfgmXXAkdUN52Xrq98Y/7pPaSoDmB7FCwWN2JuyZYMNLpuf3QxuUrqNA7myXvchOiEyuDmReMli2fkMGq34QSKMQ6GXvHIT1fNUa/EMl8c7J9VbBMOIrVdeVWJFg8CBkKQ5YBobvtpbUjrH6/uHWy1d4OJkpxYkmECMTg8+u1/q9dPBLcqo8xdgBVfwWbK46z15ERjs9ZnmHEgw5JuTrtgY3K5vmsDojhvKnheD3ZgQaqsTPG1ihaptQJR8vKW3vSaGIbjBPHd3ci8MXUiiXj9sJuF1ClbOCcNsj1bCFVSoHg8tO0xovaVbXGhIudSHsf2p7uSRyFSnbPhmIsTM4jNHZTOMYtuTqkRgSdxcn2hiEfw40s/y30pkVpzJO4NNm4gBSzyfhb0JHjpd7va6FyrILLz9R2c0IqyFx+8gpNNZkYXOGDbLjjHJIbKz6Va74s4JPDIj1NA6llCnYsn8L+JInBe1U2GebhhsZgTMt2IVl3yWDgBzayJE4tgNE0+2EcjWn/WNvTLqPBTsIgm75umL63qbYSTsew7Rgqb0tdHKMv7fHf6a176KtYOIZKSZtKd9m3iuZi27r8AXCHSUNkhLdQN8xZ8z5tx/etcEO3UcAWBq0ISuXmyNPQHA5y2sqqhcav4YgF/Zqxycb4bL7B3AGP6qo4WpSc9xV4HCPYTmmq1ALgJizZg3LHwcqadmFA2ses
+        user: AgC+43X8YMF75FD/3En48ESL/OdOnSnoZlETr/F9uaywW9saoU0RYGA7/RUSEzUo4rBjSDTh6/u1VPflZqIl08TEALeYbKPg+UKhEnXskIZ6L97S9HLYIQ0jYUntVDB6oIaCoKOfZ5hUjKPcpX1fVI9G+DgLRhbATC/Q09FrlD3vi1SPBKdcuuc1pSVhIK7hBYeiuXa5oJCF4o73Y9O3Q9osvMq+I8DK/vaoQDaG+t3NwBSFjKcBDsHWhcC4qCAylQIZ+LKEnv/rrmsDv7tmzIHAbBE+Iznhn+Po19+qbmknWMA62Yvc5hdowlY4xWjUR/luiLTRgQGwHWFtIYh9tZ0VHp3KIFD/5j2/ooJLzWpOMIlzP+lYNiGgrrzeFTbW6hp3Da7ztF0P0XOurcj+y9lloOqMkmgYhf6tIoN8x5YNxLY+a0L5sxbnWrENAmMk/K+6l8Lz9hKzeObxQXhxTHjzdl91vVfahpLWsEIzqADQeIGbpqgsO5YjTfPCG3UaBl0BET+GYcKGm9uQzjt8ZH++2Fcb1Ny2V65XZD8eo4YKcEJMxrNZr9RpVPg5niMCOELzXjbSbJ7JH67BTpau7utoCQ/WpnLcX+HyuWao0vVech/FgHEbbAzZk7Ocg0BM8cncGMeOXC71iwjJM9m7j8LPTrWA15eh1Ii5kksjMzEO5c43WiH6Mv/DmtDNPkulVjWEsbJbaju8KNiOU0byCp4wglcz
+      template:
+        metadata:
+          name: grafana-smtp-secret
+          namespace: monitoring
