@@ -1,0 +1,44 @@
+# ============================================================================
+# ArgoCD Application — Headlamp UI on the MGMT cluster.
+# ----------------------------------------------------------------------------
+# Sync wave -2: UI tools tier (after operators, alongside Grafana).
+# Access: kubectl --context devops-aks-mgmt -n headlamp get svc headlamp
+#         → note the 10.0.x.x internal LB IP
+#         → open http://<IP>:4466 on a machine connected to P2S VPN
+#
+# First-time login token:
+#   kubectl --context devops-aks-mgmt -n headlamp \
+#     create token headlamp --duration=8760h
+# ============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: headlamp-mgmt
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: hms
+  sources:
+    - repoURL: https://headlamp-k8s.github.io/headlamp/
+      chart: headlamp
+      targetRevision: 0.26.0
+      helm:
+        releaseName: headlamp
+        valueFiles:
+          - $values/infrastructure/headlamp/values-mgmt.yaml
+    - repoURL: https://github.com/Helios-DevOps-RnD/gitops-hms.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: headlamp
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
