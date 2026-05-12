@@ -22,9 +22,9 @@ metadata:
 spec:
   project: hms
   sources:
-    - repoURL: https://headlamp-k8s.github.io/headlamp/
+    - repoURL: https://kubernetes-sigs.github.io/headlamp/
       chart: headlamp
-      targetRevision: 0.26.0
+      targetRevision: 0.30.1
       helm:
         releaseName: headlamp
         valueFiles:
