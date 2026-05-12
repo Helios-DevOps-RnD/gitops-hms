@@ -1,42 +1,26 @@
 # ============================================================================
 # Headlamp — values for the MGMT cluster (chart: headlamp/headlamp)
 # ----------------------------------------------------------------------------
-# Lightweight read-only Kubernetes UI for team visibility.
-# Access: connect to P2S VPN, then open http://<INTERNAL-LB-IP>:4466
-#
-# First login:
-#   kubectl --context devops-aks-mgmt -n headlamp \
-#     create token headlamp --duration=8760h
-#   Paste the token into the Headlamp browser prompt.
+# Lightweight Kubernetes UI running in-cluster on mgmt.
+# Access: internal LB IP over P2S VPN at http://<10.0.x.x>:4466
+# In-cluster mode: uses its own ServiceAccount token (read-only via view ClusterRole).
+# First login: kubectl -n headlamp create token headlamp --duration=8760h
 # ============================================================================
 
 replicaCount: 1
 
 resources:
-  requests:
-    cpu: 50m
-    memory: 128Mi
-  limits:
-    cpu: 200m
-    memory: 256Mi
+  requests: { cpu: 50m, memory: 128Mi }
+  limits:   { cpu: 200m, memory: 256Mi }
 
 service:
   type: LoadBalancer
   port: 4466
   annotations:
-    # Internal LB — only reachable from within the VNet (P2S VPN).
-    # After ArgoCD sync: kubectl -n headlamp get svc headlamp → IP 10.0.x.x
+    # Internal LB — only reachable from within the VNet (via P2S VPN).
+    # After sync: kubectl -n headlamp get svc headlamp → IP in 10.0.x.x range
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 
-# Let Headlamp create its own ServiceAccount + ClusterRoleBinding (view only).
 clusterRoleBinding:
   create: true
-
-# Run in in-cluster mode — uses the pod's own ServiceAccount token
-# to talk to the Kubernetes API. No kubeconfig needed.
-env: []
-
-# Optional: pin to a specific Headlamp version for reproducibility.
-# Check latest at: https://github.com/headlamp-k8s/headlamp/releases
-image:
-  pullPolicy: IfNotPresent
+  clusterRoleName: view   # read-only access — cannot delete, edit, or exec
